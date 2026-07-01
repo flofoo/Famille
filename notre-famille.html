@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Lora:ital,wght@0,400..600;1,400..600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<title>Famille Colin</title>
+<style>
+  :root{
+    --paper:#F2ECDC;--ink:#212A3D;--muted:#7C7363;--wine:#7B2E2E;
+    --line:#DCD0B0;--card:#FFFCF4;--kraft:#B9A77E;
+    --serifd:"Fraunces",Georgia,serif;
+    --serif:"Lora",Georgia,serif;
+    --mono:"Space Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;
+    -webkit-font-smoothing:antialiased;line-height:1.55;
+    background-image:radial-gradient(circle at 1px 1px,rgba(33,42,61,.05) 1px,transparent 0);
+    background-size:3px 3px}
+
+  .shell{display:flex;align-items:stretch;min-height:100vh}
+  .sidenav{width:216px;flex-shrink:0;position:sticky;top:0;align-self:flex-start;height:100vh;
+    border-right:1px solid var(--line);background:rgba(242,236,220,.7);
+    padding:40px 26px 26px;display:flex;flex-direction:column;gap:44px;overflow-y:auto}
+  .brandMark{font-family:var(--serifd);font-style:italic;font-weight:600;font-size:22px;color:var(--ink);line-height:1.15}
+  .brandMark span{display:block;font-family:var(--mono);font-style:normal;font-size:9px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--wine);margin-bottom:9px}
+  .tabs{display:flex;flex-direction:column;gap:2px;position:relative}
+  .tabPill{position:absolute;top:0;left:0;width:0;height:0;background:rgba(123,46,46,.09);
+    border-left:2px solid var(--wine);z-index:0;pointer-events:none;
+    transition:transform .42s cubic-bezier(.22,.68,.36,1),width .42s cubic-bezier(.22,.68,.36,1),height .42s cubic-bezier(.22,.68,.36,1)}
+  .tab{position:relative;z-index:1;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+    cursor:pointer;padding:11px 4px 11px 16px;border:none;
+    background:transparent;color:var(--muted);text-align:left;transition:color .25s ease}
+  .tab[aria-selected="true"]{color:var(--wine)}
+  .saveDot{font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--wine);margin-top:auto}
+  .content{flex:1;min-width:0}
+
+  @keyframes viewIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .content main>section:not([hidden]){animation:viewIn .42s cubic-bezier(.22,.68,.36,1) both}
+
+  .hero{max-width:760px;margin:0 auto;text-align:center;padding:56px 24px 26px}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--wine);
+    font-weight:700;display:inline-block;padding:5px 12px;border:1px solid var(--wine)}
+  .family{font-family:var(--serifd);font-style:italic;font-weight:600;font-size:clamp(46px,11vw,88px);line-height:.98;
+    letter-spacing:-.01em;margin:16px 0 6px;border:none;background:transparent;text-align:center;color:var(--ink);width:100%;outline:none}
+  .family:focus{box-shadow:0 3px 0 var(--wine)}
+  .sub{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:18px}
+  .orn{display:flex;align-items:center;justify-content:center;gap:14px;margin:24px auto 0;max-width:230px}
+  .orn .l{flex:1;height:1px;background:var(--wine);opacity:.55}
+  .orn .d{width:6px;height:6px;transform:rotate(45deg);background:var(--wine);opacity:.85}
+  .tip{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+
+  main{max-width:980px;margin:0 auto;padding:14px 40px 60px}
+  .empty{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:18px;line-height:1.6;max-width:460px;margin:30px auto;text-align:center}
+
+  /* accueil : deux colonnes */
+  .homeTop{display:grid;grid-template-columns:1fr 260px;gap:40px;align-items:start}
+  .homeSide{display:flex;flex-direction:column;gap:18px;position:sticky;top:26px}
+  .homeSide .memoryBox,.homeSide .quoteBox,.homeSide .newsBanner{max-width:none;margin:0}
+
+  .addbtn{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:13px 24px;border:1.5px dashed var(--wine);
+    background:var(--card);color:var(--wine);margin:10px 0 18px}
+  .action{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;padding:13px 26px;border:none;background:var(--ink);color:var(--paper)}
+
+  /* diaporama */
+  .carousel{position:relative;max-width:860px;margin:8px auto 0;background:var(--card);padding:14px;
+    border:1px solid var(--line);box-shadow:0 26px 54px -30px rgba(33,42,61,.4)}
+  .slide{height:clamp(300px,58vh,580px);display:flex;align-items:center;justify-content:center;background:#15130F}
+  .slide img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+  .cbtn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(33,42,61,.5);border:1px solid rgba(255,255,255,.18);
+    color:#fff;font-size:26px;width:46px;height:46px;border-radius:50%;cursor:pointer;line-height:1}
+  .cprev{left:26px}.cnext{right:26px}
+  .slideCap{font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;margin:16px 0 0;font-size:11px}
+  .dots{display:flex;gap:8px;justify-content:center;margin:12px 0 0;flex-wrap:wrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:none;cursor:pointer;padding:0;transition:.2s}
+  .dot[aria-selected="true"]{background:var(--wine);transform:scale(1.3)}
+
+  /* commentaires + livre d'or */
+  .comments{max-width:620px;margin:34px auto 0}
+  .comments h3{font-family:var(--serifd);font-style:italic;font-weight:600;font-size:25px;margin:0;text-align:center}
+  .comments .hr{width:48px;height:1px;background:var(--wine);opacity:.6;margin:12px auto 4px}
+  .comments .for{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);text-align:center;margin-bottom:22px;text-transform:uppercase}
+  .clist{display:flex;flex-direction:column;gap:14px;margin-bottom:22px}
+  .comment{background:var(--card);border:1px solid var(--line);padding:16px 18px 15px;position:relative}
+  .comment::before{content:"";position:absolute;top:-6px;left:22px;width:42px;height:13px;
+    background:rgba(185,167,126,.4);transform:rotate(-2deg)}
+  .comment .who{font-family:var(--serifd);font-style:italic;font-weight:600;color:var(--wine);font-size:16px}
+  .comment .when{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--muted);margin-left:10px}
+  .comment .txt{font-family:var(--serif);font-size:16px;color:var(--ink);margin-top:6px;white-space:pre-wrap;line-height:1.55}
+  .cempty{font-family:var(--serif);font-style:italic;color:var(--muted);text-align:center;margin-bottom:16px}
+  .cform{display:flex;flex-direction:column;gap:11px;max-width:520px;margin:0 auto}
+  .cform input,.cform textarea{font-family:var(--sans);font-size:16px;padding:13px 15px;border:1px solid var(--line);
+    border-radius:2px;background:#fff;color:var(--ink);outline:none;width:100%}
+  .cform textarea{resize:vertical;min-height:70px;line-height:1.5}
+  .cform input:focus,.cform textarea:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(33,42,61,.08)}
+  .cAddBtn{align-self:center;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;padding:13px 28px;border:none;background:var(--ink);color:var(--paper)}
+
+  /* filtres album */
+  .filterbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:4px 0 22px}
+  .chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:7px 14px;
+    border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+  .chip[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  /* album : tuiles façon polaroid */
+  .acenter{text-align:center}
+  .mosaic{columns:4 220px;column-gap:26px;text-align:left}
+  .tile{break-inside:avoid;margin:0 0 30px;position:relative;background:var(--card);
+    padding:10px 10px 32px;border:1px solid var(--line);box-shadow:0 18px 36px -26px rgba(33,42,61,.4);
+    transition:transform .2s}
+  .tile:nth-child(4n+1){transform:rotate(-1.1deg)}
+  .tile:nth-child(4n+2){transform:rotate(.8deg)}
+  .tile:nth-child(4n+3){transform:rotate(-.6deg)}
+  .tile:nth-child(4n+4){transform:rotate(1deg)}
+  .tile:hover{transform:rotate(0deg) scale(1.02);z-index:2}
+  .tile.feature{column-span:all;max-width:660px;margin:6px auto 36px;transform:none!important;padding:16px 16px 38px}
+  .tile.feature img{max-height:520px;width:100%;object-fit:cover}
+  .tile.feature:hover{transform:none!important}
+  .tile img{width:100%;display:block;cursor:pointer}
+  .tilebtn{position:absolute;border:none;cursor:pointer;line-height:1;border-radius:50%;
+    background:rgba(33,42,61,.55);color:#fff;width:30px;height:30px;font-size:15px;opacity:.92}
+  .tfav{top:16px;left:16px}
+  .tfav.on{background:var(--wine)}
+  .tperson{top:16px;left:52px}
+  .tdel{top:16px;right:16px;font-size:14px}
+  .ttag{position:absolute;bottom:6px;left:14px;right:14px;border:none;cursor:pointer;background:transparent;
+    color:var(--ink);font-family:var(--serifd);font-style:italic;font-size:13px;padding:0;text-align:left;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* journal : ligne du temps */
+  .jbar{text-align:center;margin:8px 0 24px}
+  .jnote{font-family:var(--serif);font-style:italic;color:var(--muted);text-align:center;margin-bottom:10px}
+  #journal{position:relative;padding-left:30px;margin-top:20px}
+  #journal::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:1px;background:var(--line)}
+  .daygroup{position:relative;margin:0 0 42px}
+  .daygroup::before{content:"";position:absolute;left:-30px;top:5px;width:9px;height:9px;border-radius:50%;
+    background:var(--paper);border:2px solid var(--wine)}
+  .daytab{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--wine);background:transparent;padding:0}
+  .dayline{display:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px;margin-top:18px}
+  .card{background:var(--card);padding:13px 13px 15px;border:1px solid var(--line);
+    box-shadow:0 1px 2px rgba(33,42,61,.05),0 12px 26px -18px rgba(33,42,61,.35)}
+  .card .ph{background:#15130F;overflow:hidden;aspect-ratio:4/3}
+  .card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .note{width:100%;border:none;background:transparent;resize:none;font-family:var(--serif);
+    font-size:16px;color:var(--ink);margin-top:11px;outline:none;line-height:1.45;min-height:22px}
+  .note::placeholder{color:#B0A68E;font-style:italic}
+  .cardfoot{display:flex;justify-content:space-between;align-items:center;margin-top:7px;gap:8px}
+  .datefield{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--muted);border:none;background:transparent;outline:none;padding:0}
+
+  /* souvenir, citation, bandeau, saison, carte */
+  .memoryBox,.quoteBox{max-width:620px;margin:0 auto 22px;background:var(--card);border:1px solid var(--line);
+    border-left:3px solid var(--wine);padding:16px 20px;display:flex;gap:14px;align-items:center;cursor:pointer}
+  .memoryBox img{width:64px;height:64px;object-fit:cover;flex-shrink:0}
+  .memoryBox .txt{font-family:var(--serif);font-style:italic;color:var(--ink);font-size:15px;line-height:1.4}
+  .memoryBox .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--wine);font-weight:700;margin-bottom:4px;font-style:normal}
+  .quoteBox{justify-content:center;text-align:center;flex-direction:column;cursor:default}
+  .quoteBox .txt{font-family:var(--serifd);font-style:italic;font-size:18px;color:var(--ink)}
+  .quoteBox .who{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-top:8px;font-style:normal}
+  .newsBanner{max-width:620px;margin:0 auto 18px;background:var(--ink);color:var(--paper);
+    padding:11px 18px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;cursor:pointer}
+  .seasonTag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:10px}
+  .mapBox{height:440px;border:1px solid var(--line);overflow:hidden;margin-top:10px}
+  .mapBox .leaflet-tile-pane{filter:sepia(.35) saturate(.7) brightness(.96)}
+  .mapPopup img{width:120px;display:block}
+  .mapPopup .cap{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--muted);margin-top:5px}
+
+  .lb{position:fixed;inset:0;background:rgba(20,16,12,.94);display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
+  .lb.open{display:flex}
+  .lb img{max-width:90vw;max-height:84vh;box-shadow:0 30px 80px -20px #000;border:10px solid var(--paper)}
+  .lbbtn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:30px;width:54px;height:54px;border-radius:50%;cursor:pointer}
+  .lbprev{left:18px}.lbnext{right:18px}
+  .lbclose{position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:30px;cursor:pointer}
+
+  @media print{
+    nav,.hero,.addbtn,.jbar,.jnote,.tilebtn,.saveDot,.cbtn,.dots,.cform,.slideCap,.filterbar,
+    .memoryBox,.quoteBox,.newsBanner,.seasonTag{display:none!important}
+    body{background:#fff}main{max-width:none;padding:0}.card{break-inside:avoid;box-shadow:none}
+  }
+  @media (max-width:900px){
+    .shell{flex-direction:column}
+    .sidenav{width:100%;height:auto;position:sticky;top:0;z-index:20;flex-direction:row;align-items:center;
+      gap:18px;padding:12px 18px;border-right:none;border-bottom:1px solid var(--line);
+      background:rgba(242,236,220,.92);backdrop-filter:saturate(150%) blur(10px);overflow-x:auto}
+    .brandMark{font-size:16px;white-space:nowrap}
+    .brandMark span{display:none}
+    .tabs{flex-direction:row;gap:4px}
+    .tab{padding:8px 10px;white-space:nowrap}
+    .tabPill{border-left:none;border-bottom:2px solid var(--wine);border-radius:0}
+    .saveDot{margin-top:0;margin-left:auto;white-space:nowrap}
+    main{padding:14px 20px 40px}
+    .homeTop{grid-template-columns:1fr}
+    .homeSide{position:static}
+    .mosaic{columns:2 140px}.grid{grid-template-columns:1fr 1fr}
+    .lbbtn{width:44px;height:44px;font-size:24px}
+  }
+</style>
+</head>
+<body>
+
+  <div class="shell">
+    <nav class="sidenav">
+      <div class="brandMark"><span>Carnet de famille</span><span id="brandName">Colin</span></div>
+      <div class="tabs">
+        <span class="tabPill" id="tabPill"></span>
+        <button class="tab" id="tabAccueil" aria-selected="true">Accueil</button>
+        <button class="tab" id="tabAlbum" aria-selected="false">Album</button>
+        <button class="tab" id="tabJournal" aria-selected="false">Journal</button>
+        <button class="tab" id="tabCarte" aria-selected="false">Carte</button>
+        <button class="tab" id="tabLivre" aria-selected="false">Livre d'or</button>
+      </div>
+      <span class="saveDot" id="saveDot"></span>
+    </nav>
+
+    <div class="content">
+      <header class="hero">
+        <div class="eyebrow">La famille</div>
+        <input id="famName" class="family" value="Colin" aria-label="Nom de la famille">
+        <div class="sub">nos photos, nos souvenirs, nos petits riens</div>
+        <div class="orn"><span class="l"></span><span class="d"></span><span class="l"></span></div>
+        <div class="tip">Touche le nom pour le changer</div>
+        <div class="seasonTag" id="seasonTag" style="display:none"></div>
+      </header>
+
+      <main>
+    <!-- ACCUEIL -->
+    <section id="viewAccueil">
+      <div class="homeTop">
+        <div class="homeMain">
+          <div id="accueilEmpty" class="empty">Ajoute des photos dans l'Album.<br>Elles défileront ici, et tu pourras laisser un mot sous chacune.</div>
+          <div id="carouselUI" style="display:none">
+            <div class="carousel">
+              <div class="slide"><img id="slideImg" src="" alt="photo de famille"></div>
+              <button class="cbtn cprev" id="cPrev" aria-label="Précédente">‹</button>
+              <button class="cbtn cnext" id="cNext" aria-label="Suivante">›</button>
+            </div>
+            <div class="slideCap" id="slideCap"></div>
+            <div class="dots" id="dots"></div>
+          </div>
+        </div>
+        <aside class="homeSide">
+          <div id="newsBanner" class="newsBanner" style="display:none"></div>
+          <div id="memoryBox" class="memoryBox" style="display:none"></div>
+          <div id="quoteBox" class="quoteBox" style="display:none"></div>
+        </aside>
+      </div>
+      <div class="comments" id="commentsWrap" style="display:none">
+        <h3>Commentaires</h3><div class="hr"></div>
+        <div class="for">sur cette photo</div>
+        <div class="clist" id="clist"></div>
+        <div class="cform">
+          <input id="cName" type="text" placeholder="Ton prénom" maxlength="40">
+          <textarea id="cText" placeholder="Écris un petit mot sur cette photo…"></textarea>
+          <button class="cAddBtn" id="cAdd">Ajouter le commentaire</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALBUM -->
+    <section id="viewAlbum" hidden class="acenter">
+      <button class="addbtn" id="addBtn">＋ Mettre des photos</button>
+      <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      <div id="filterbar" class="filterbar"></div>
+      <div id="albumEmpty" class="empty">Dépose tes photos ici.<br>Cœur pour les favorites, étiquette pour les ranger par événement.</div>
+      <div id="mosaic" class="mosaic"></div>
+    </section>
+
+    <!-- JOURNAL -->
+    <section id="viewJournal" hidden>
+      <div id="journalEmpty" class="empty">Ajoute d'abord des photos dans l'Album.<br>Le journal se remplira automatiquement, rangé par date.</div>
+      <div id="journalUI" style="display:none">
+        <div class="jnote">Composé automatiquement à partir de tes photos.</div>
+        <div class="jbar"><button class="action" id="printJournal">Imprimer / Enregistrer en PDF</button></div>
+        <div id="journal"></div>
+      </div>
+    </section>
+
+    <!-- CARTE -->
+    <section id="viewCarte" hidden>
+      <div id="carteEmpty" class="empty">Aucune photo géolocalisée pour l'instant.<br>Les photos prises avec la localisation activée sur ton téléphone apparaîtront ici automatiquement.</div>
+      <div id="mapDiv" class="mapBox" style="display:none"></div>
+    </section>
+
+    <!-- LIVRE D'OR -->
+    <section id="viewLivre" hidden>
+      <div class="comments">
+        <h3>Livre d'or</h3><div class="hr"></div>
+        <div class="for">les mots de la famille — sur les photos ou sur tout le reste</div>
+        <div class="clist" id="glist"></div>
+        <div class="cform">
+          <input id="gName" type="text" placeholder="Ton prénom" maxlength="40">
+          <textarea id="gText" placeholder="Laisse un message à la famille…"></textarea>
+          <button class="cAddBtn" id="gAdd">Signer le livre d'or</button>
+        </div>
+      </div>
+    </section>
+  </main>
+    </div>
+  </div>
+
+  <div class="lb" id="lb">
+    <button class="lbclose" id="lbClose" aria-label="Fermer">✕</button>
+    <button class="lbbtn lbprev" id="lbPrev" aria-label="Précédente">‹</button>
+    <img id="lbImg" src="" alt="photo agrandie">
+    <button class="lbbtn lbnext" id="lbNext" aria-label="Suivante">›</button>
+  </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  "use strict";
+  var $=function(s){return document.querySelector(s);};
+
+  /* ---- connexion Supabase (remplace le stockage local des artefacts) ---- */
+  var SUPABASE_URL="https://qnzldutnycrkynaukzkp.supabase.co";
+  var SUPABASE_KEY="sb_publishable_sxh23sxale0QI_30Uayqag_ymUUJpK5";
+  var BUCKET="photos";
+  var sb=(typeof window.supabase!=="undefined")?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY):null;
+  function pathOf(key){return key.replace(/:/g,"__");}
+  var STORE=sb?{
+    get:function(key){
+      return sb.storage.from(BUCKET).download(pathOf(key)).then(function(res){
+        if(res.error||!res.data)throw res.error||new Error("introuvable");
+        return res.data.text().then(function(text){return {key:key,value:text};});
+      });
+    },
+    set:function(key,value){
+      var blob=new Blob([value],{type:"application/json"});
+      return sb.storage.from(BUCKET).upload(pathOf(key),blob,{upsert:true,contentType:"application/json"}).then(function(res){
+        if(res.error)throw res.error;
+        return {key:key,value:value};
+      });
+    },
+    delete:function(key){
+      return sb.storage.from(BUCKET).remove([pathOf(key)]).then(function(res){
+        if(res.error)throw res.error;
+        return {key:key,deleted:true};
+      });
+    }
+  }:null;
+  var IDX="famsite:index";
+  var state={title:"Colin",photos:[],guestbook:[]}; // photo:{id,src,date,note,comments[],album,fav}
+  var lbIndex=0, carIndex=0, saveTimer=null, carTimer=null, filter="all";
+
+  function flash(msg){var d=$("#saveDot");d.textContent=(msg===undefined?"enregistré ✓":msg);
+    if(msg!==""){clearTimeout(d._t);d._t=setTimeout(function(){d.textContent="";},1600);}}
+
+  function saveIndex(){
+    if(!STORE)return;
+    var meta={title:state.title,guestbook:state.guestbook,order:state.photos.map(function(p){
+      return {id:p.id,date:p.date,note:p.note,comments:p.comments||[],album:p.album||"",fav:!!p.fav,people:p.people||[],added:p.added||p.date,lat:(typeof p.lat==="number"?p.lat:null),lng:(typeof p.lng==="number"?p.lng:null)};})};
+    STORE.set(IDX,JSON.stringify(meta),false).then(function(){flash();}).catch(function(){});
+  }
+  function savePhoto(p){if(!STORE)return;STORE.set("famsite:p:"+p.id,p.src,false).catch(function(){});}
+  function delPhoto(id){if(!STORE)return;STORE.delete("famsite:p:"+id,false).catch(function(){});}
+  function debouncedIndex(){clearTimeout(saveTimer);saveTimer=setTimeout(saveIndex,500);}
+  function saveEverything(){if(!STORE)return;saveIndex();state.photos.forEach(savePhoto);}
+
+  function loadAll(){
+    if(!STORE){renderAll();return;}
+    STORE.get(IDX,false).then(function(res){
+      if(!res||!res.value)throw 0;
+      var meta=JSON.parse(res.value);
+      state.title=meta.title||state.title;$("#famName").value=state.title;$("#brandName").textContent=state.title;
+      state.guestbook=meta.guestbook||[];
+      var jobs=(meta.order||[]).map(function(e){
+        return STORE.get("famsite:p:"+e.id,false).then(function(r){
+          return r&&r.value?{id:e.id,src:r.value,date:e.date||Date.now(),note:e.note||"",
+            comments:e.comments||[],album:e.album||"",fav:!!e.fav,people:e.people||[],added:e.added||e.date||Date.now(),
+            lat:(typeof e.lat==="number"?e.lat:null),lng:(typeof e.lng==="number"?e.lng:null)}:null;
+        }).catch(function(){return null;});
+      });
+      return Promise.all(jobs);
+    }).then(function(list){if(list)state.photos=list.filter(Boolean);renderAll();renderNews();checkInbox();})
+      .catch(function(){renderAll();renderNews();checkInbox();});
+  }
+
+  /* ---- sas d'attente : photos reçues par email via Make.com ---- */
+  function checkInbox(){
+    if(!sb)return;
+    sb.storage.from(BUCKET).list("inbox",{limit:100}).then(function(res){
+      var files=(res&&res.data)?res.data.filter(function(f){return f.name&&f.name!==".emptyFolderPlaceholder";}):[];
+      if(!files.length)return;
+      flash("nouvelles photos…");
+      var jobs=files.map(function(f){
+        return sb.storage.from(BUCKET).download("inbox/"+f.name).then(function(dl){
+          if(dl.error||!dl.data)return null;
+          return dl.data.arrayBuffer().then(function(buf){
+            var blob=new Blob([buf]);
+            return new Promise(function(resolve){
+              var r=new FileReader();
+              r.onload=function(ev){resolve(ev.target.result);};
+              r.onerror=function(){resolve(null);};
+              r.readAsDataURL(blob);
+            });
+          }).then(function(dataUrl){
+            if(!dataUrl)return null;
+            return downscale(dataUrl).then(function(small){
+              var p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),src:small,
+                date:Date.now(),note:"",comments:[],album:"",fav:false,people:[],added:Date.now(),lat:null,lng:null};
+              state.photos.push(p);savePhoto(p);
+              return sb.storage.from(BUCKET).remove(["inbox/"+f.name]);
+            });
+          });
+        }).catch(function(){return null;});
+      });
+      Promise.all(jobs).then(function(){saveIndex();renderAll();flash();});
+    }).catch(function(){});
+  }
+
+  function downscale(dataUrl){
+    return new Promise(function(resolve){
+      var img=new Image();
+      img.onload=function(){
+        var max=1200,w=img.width,h=img.height;
+        if(w>max||h>max){var r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r);}
+        var c=document.createElement("canvas");c.width=w;c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        try{resolve(c.toDataURL("image/jpeg",0.72));}catch(e){resolve(dataUrl);}
+      };
+      img.onerror=function(){resolve(dataUrl);};img.src=dataUrl;
+    });
+  }
+
+  function getGPS(file){
+    return new Promise(function(resolve){
+      if(typeof EXIF==="undefined"){resolve(null);return;}
+      try{
+        EXIF.getData(file,function(){
+          var lat=EXIF.getTag(this,"GPSLatitude"),latRef=EXIF.getTag(this,"GPSLatitudeRef");
+          var lon=EXIF.getTag(this,"GPSLongitude"),lonRef=EXIF.getTag(this,"GPSLongitudeRef");
+          if(!lat||!lon){resolve(null);return;}
+          function toDeg(a){return a[0]+a[1]/60+a[2]/3600;}
+          var la=toDeg(lat);if(latRef==="S")la=-la;
+          var lo=toDeg(lon);if(lonRef==="W")lo=-lo;
+          resolve({lat:la,lng:lo});
+        });
+      }catch(e){resolve(null);}
+    });
+  }
+
+  $("#addBtn").addEventListener("click",function(){$("#fileInput").click();});
+  $("#fileInput").addEventListener("change",function(e){
+    var files=Array.prototype.slice.call(e.target.files||[]);
+    if(files.length)flash("enregistrement…");
+    files.forEach(function(f){
+      if(!f.type||f.type.indexOf("image")!==0)return;
+      var when=f.lastModified||Date.now();
+      getGPS(f).then(function(gps){
+        var r=new FileReader();
+        r.onload=function(ev){
+          downscale(ev.target.result).then(function(small){
+            var p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),src:small,date:when,note:"",
+              comments:[],album:"",fav:false,people:[],added:Date.now(),
+              lat:gps?gps.lat:null,lng:gps?gps.lng:null};
+            state.photos.push(p);savePhoto(p);saveIndex();renderAll();
+          });
+        };
+        r.readAsDataURL(f);
+      });
+    });
+    e.target.value="";
+  });
+
+  if(typeof L!=="undefined"){
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+      iconUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      shadowUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png"
+    });
+  }
+  var mapInstance=null,mapMarkers=[];
+
+  function movePill(btn){
+    var pill=$("#tabPill");if(!pill||!btn)return;
+    var wrap=btn.parentElement;
+    var wr=wrap.getBoundingClientRect(),r=btn.getBoundingClientRect();
+    pill.style.width=r.width+"px";pill.style.height=r.height+"px";
+    pill.style.transform="translate("+(r.left-wr.left)+"px,"+(r.top-wr.top)+"px)";
+  }
+  function show(view){
+    var v={accueil:view==="accueil",album:view==="album",journal:view==="journal",carte:view==="carte",livre:view==="livre"};
+    $("#viewAccueil").hidden=!v.accueil;$("#viewAlbum").hidden=!v.album;
+    $("#viewJournal").hidden=!v.journal;$("#viewCarte").hidden=!v.carte;$("#viewLivre").hidden=!v.livre;
+    $("#tabAccueil").setAttribute("aria-selected",v.accueil);
+    $("#tabAlbum").setAttribute("aria-selected",v.album);
+    $("#tabJournal").setAttribute("aria-selected",v.journal);
+    $("#tabCarte").setAttribute("aria-selected",v.carte);
+    $("#tabLivre").setAttribute("aria-selected",v.livre);
+    movePill($("#tab"+view.charAt(0).toUpperCase()+view.slice(1)));
+    if(v.accueil){renderCarousel();renderMemory();renderQuote();}
+    if(v.album)renderAlbum();
+    if(v.journal)renderJournal();
+    if(v.carte)renderCarte();
+    if(v.livre)renderLivre();
+  }
+  window.addEventListener("resize",function(){
+    var active=document.querySelector('.tab[aria-selected="true"]');
+    if(active){pillNoAnim();movePill(active);requestAnimationFrame(pillYesAnim);}
+  });
+  function pillNoAnim(){var p=$("#tabPill");if(p)p.style.transition="none";}
+  function pillYesAnim(){var p=$("#tabPill");if(p)p.style.transition="";}
+  $("#tabAccueil").addEventListener("click",function(){show("accueil");});
+  $("#tabAlbum").addEventListener("click",function(){show("album");});
+  $("#tabJournal").addEventListener("click",function(){show("journal");});
+  $("#tabCarte").addEventListener("click",function(){show("carte");});
+  $("#tabLivre").addEventListener("click",function(){show("livre");});
+
+  $("#famName").addEventListener("input",function(){state.title=$("#famName").value;$("#brandName").textContent=state.title||"Colin";debouncedIndex();});
+
+  function dayKey(ms){var d=new Date(ms);return d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate();}
+  function dayLabel(ms){var d=new Date(ms),M=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+    return d.getDate()+" "+M[d.getMonth()]+" "+d.getFullYear();}
+  function inputDate(ms){var d=new Date(ms),m=("0"+(d.getMonth()+1)).slice(-2),j=("0"+d.getDate()).slice(-2);
+    return d.getFullYear()+"-"+m+"-"+j;}
+
+  /* ---- diaporama + commentaires ---- */
+  function startCar(){clearInterval(carTimer);carTimer=setInterval(function(){
+    if(!$("#viewAccueil").hidden&&state.photos.length>1){carStep(1);}},5000);}
+  function carStep(d){var n=state.photos.length;if(!n)return;carIndex=(carIndex+d+n)%n;renderCarousel();startCar();}
+
+  function renderCarousel(){
+    var n=state.photos.length;
+    $("#accueilEmpty").style.display=n?"none":"block";
+    $("#carouselUI").style.display=n?"block":"none";
+    $("#commentsWrap").style.display=n?"block":"none";
+    if(!n)return;
+    if(carIndex>=n)carIndex=0;
+    var p=state.photos[carIndex];
+    $("#slideImg").src=p.src;$("#slideCap").textContent=dayLabel(p.date)+(p.album?" · "+p.album:"");
+    var dots=$("#dots");dots.innerHTML="";
+    state.photos.forEach(function(q,i){
+      var b=document.createElement("button");b.className="dot";b.setAttribute("aria-selected",i===carIndex);
+      b.addEventListener("click",function(){carIndex=i;renderCarousel();startCar();});dots.appendChild(b);
+    });
+    renderComments();
+  }
+  function renderComments(){
+    var p=state.photos[carIndex];if(!p)return;p.comments=p.comments||[];
+    var list=$("#clist");list.innerHTML="";
+    if(!p.comments.length){var e=document.createElement("div");e.className="cempty";e.textContent="Sois le premier à laisser un mot.";list.appendChild(e);}
+    p.comments.forEach(function(c){list.appendChild(commentEl(c));});
+  }
+  function commentEl(c){
+    var box=document.createElement("div");box.className="comment";
+    var head=document.createElement("div");
+    var who=document.createElement("span");who.className="who";who.textContent=c.name||"Anonyme";
+    var when=document.createElement("span");when.className="when";when.textContent=dayLabel(c.date);
+    head.appendChild(who);head.appendChild(when);
+    var txt=document.createElement("div");txt.className="txt";txt.textContent=c.text;
+    box.appendChild(head);box.appendChild(txt);return box;
+  }
+  $("#cAdd").addEventListener("click",function(){
+    var p=state.photos[carIndex];if(!p)return;
+    var text=$("#cText").value.trim();if(!text)return;
+    var name=$("#cName").value.trim()||"Anonyme";
+    p.comments=p.comments||[];p.comments.push({id:Date.now().toString(36),name:name,text:text,date:Date.now()});
+    saveIndex();$("#cText").value="";renderComments();
+  });
+  $("#cPrev").addEventListener("click",function(){carStep(-1);});
+  $("#cNext").addEventListener("click",function(){carStep(1);});
+
+  /* ---- livre d'or ---- */
+  function renderLivre(){
+    var list=$("#glist");list.innerHTML="";
+    if(!state.guestbook.length){var e=document.createElement("div");e.className="cempty";e.textContent="Le livre est encore vierge. Écris le premier mot.";list.appendChild(e);return;}
+    state.guestbook.slice().reverse().forEach(function(c){list.appendChild(commentEl(c));});
+  }
+  $("#gAdd").addEventListener("click",function(){
+    var text=$("#gText").value.trim();if(!text)return;
+    var name=$("#gName").value.trim()||"Anonyme";
+    state.guestbook.push({id:Date.now().toString(36),name:name,text:text,date:Date.now()});
+    saveIndex();$("#gText").value="";renderLivre();
+  });
+
+  /* ---- album : favoris + événements + filtres ---- */
+  function distinctAlbums(){var s={},out=[];state.photos.forEach(function(p){if(p.album&&!s[p.album]){s[p.album]=1;out.push(p.album);}});return out;}
+  function distinctPeople(){var s={},out=[];state.photos.forEach(function(p){(p.people||[]).forEach(function(n){if(n&&!s[n]){s[n]=1;out.push(n);}});});return out;}
+  function renderFilters(){
+    var bar=$("#filterbar");bar.innerHTML="";
+    var hasFav=state.photos.some(function(p){return p.fav;});
+    var evs=distinctAlbums();
+    var ppl=distinctPeople();
+    if(!hasFav&&!evs.length&&!ppl.length){return;}
+    function chip(label,val){var b=document.createElement("button");b.className="chip";b.textContent=label;
+      b.setAttribute("aria-selected",filter===val);
+      b.addEventListener("click",function(){filter=val;renderAlbum();});bar.appendChild(b);}
+    chip("Toutes","all");
+    if(hasFav)chip("♥ Coups de cœur","fav");
+    evs.forEach(function(ev){chip(ev,ev);});
+    ppl.forEach(function(n){chip("👤 "+n,"person:"+n);});
+  }
+  function visiblePhotos(){
+    return state.photos.filter(function(p){
+      if(filter==="all")return true;
+      if(filter==="fav")return p.fav;
+      if(filter.indexOf("person:")===0){var name=filter.slice(7);return (p.people||[]).indexOf(name)!==-1;}
+      return p.album===filter;
+    });
+  }
+  function renderAlbum(){
+    renderFilters();
+    var m=$("#mosaic");m.innerHTML="";
+    var has=state.photos.length>0;$("#albumEmpty").style.display=has?"none":"block";
+    var vis=visiblePhotos();
+    vis.forEach(function(p,i){
+      var realIndex=state.photos.indexOf(p);
+      var t=document.createElement("div");t.className="tile"+((i%6===0&&vis.length>3)?" feature":"");
+      var img=document.createElement("img");img.src=p.src;img.alt="photo de famille";
+      img.addEventListener("click",function(){openLb(realIndex);});
+      var fav=document.createElement("button");fav.className="tilebtn tfav"+(p.fav?" on":"");fav.textContent="♥";fav.title="Coup de cœur";
+      fav.addEventListener("click",function(ev){ev.stopPropagation();p.fav=!p.fav;saveIndex();renderAlbum();});
+      var del=document.createElement("button");del.className="tilebtn tdel";del.textContent="✕";del.title="Retirer";
+      del.addEventListener("click",function(ev){ev.stopPropagation();var id=p.id;
+        state.photos=state.photos.filter(function(q){return q.id!==id;});delPhoto(id);saveIndex();
+        if(carIndex>=state.photos.length)carIndex=0;renderAll();});
+      var tag=document.createElement("button");tag.className="ttag";tag.textContent=p.album?("🏷 "+p.album):"🏷 Ranger dans un événement";
+      tag.addEventListener("click",function(ev){ev.stopPropagation();
+        var name=prompt("Événement (ex : Noël 2025). Laisse vide pour aucun :",p.album||"");
+        if(name!==null){p.album=name.trim();saveIndex();renderAlbum();}});
+      var person=document.createElement("button");person.className="tilebtn tperson";person.textContent="👤";person.title="Qui est sur la photo ?";
+      person.addEventListener("click",function(ev){ev.stopPropagation();
+        var current=(p.people||[]).join(", ");
+        var names=prompt("Qui est sur cette photo ? (prénoms séparés par des virgules)",current);
+        if(names!==null){p.people=names.split(",").map(function(s){return s.trim();}).filter(Boolean);saveIndex();renderAlbum();}});
+      t.appendChild(img);t.appendChild(fav);t.appendChild(person);t.appendChild(del);t.appendChild(tag);m.appendChild(t);
+    });
+  }
+
+  /* ---- journal ---- */
+  function renderJournal(){
+    var box=$("#journal");var has=state.photos.length>0;
+    $("#journalEmpty").style.display=has?"none":"block";
+    $("#journalUI").style.display=has?"block":"none";
+    if(!has){if(box)box.innerHTML="";return;}
+    box.innerHTML="";
+    var sorted=state.photos.slice().sort(function(a,b){return a.date-b.date;});
+    var groups={},order=[];
+    sorted.forEach(function(p){var k=dayKey(p.date);if(!groups[k]){groups[k]=[];order.push(k);}groups[k].push(p);});
+    order.forEach(function(k){
+      var g=document.createElement("div");g.className="daygroup";
+      var tab=document.createElement("span");tab.className="daytab";tab.textContent=dayLabel(groups[k][0].date);g.appendChild(tab);
+      var line=document.createElement("div");line.className="dayline";g.appendChild(line);
+      var grid=document.createElement("div");grid.className="grid";
+      groups[k].forEach(function(p){
+        var card=document.createElement("div");card.className="card";
+        var ph=document.createElement("div");ph.className="ph";
+        var img=document.createElement("img");img.src=p.src;img.alt="photo";ph.appendChild(img);card.appendChild(ph);
+        var note=document.createElement("textarea");note.className="note";note.placeholder="Un mot sur ce moment…";note.value=p.note;note.rows=1;
+        note.addEventListener("input",function(){p.note=note.value;note.style.height="auto";note.style.height=note.scrollHeight+"px";debouncedIndex();});
+        card.appendChild(note);
+        var foot=document.createElement("div");foot.className="cardfoot";
+        var df=document.createElement("input");df.type="date";df.className="datefield";df.value=inputDate(p.date);
+        df.addEventListener("change",function(){if(df.value){p.date=new Date(df.value+"T12:00:00").getTime();saveIndex();renderJournal();}});
+        foot.appendChild(df);card.appendChild(foot);grid.appendChild(card);
+      });
+      g.appendChild(grid);box.appendChild(g);
+    });
+  }
+
+  function renderAll(){
+    if(!$("#viewAlbum").hidden)renderAlbum();
+    renderCarousel();
+    renderMemory();
+    renderQuote();
+    if(!$("#viewJournal").hidden)renderJournal();
+    if(!$("#viewLivre").hidden)renderLivre();
+  }
+
+  /* ---- souvenir du jour ---- */
+  function renderMemory(){
+    var box=$("#memoryBox");if(!box)return;
+    var today=new Date();
+    var matches=state.photos.filter(function(p){
+      var d=new Date(p.date);
+      return d.getMonth()===today.getMonth()&&d.getDate()===today.getDate()&&d.getFullYear()<today.getFullYear();
+    });
+    if(!matches.length){box.style.display="none";return;}
+    matches.sort(function(a,b){return new Date(b.date).getFullYear()-new Date(a.date).getFullYear();});
+    var p=matches[0];
+    var years=today.getFullYear()-new Date(p.date).getFullYear();
+    box.innerHTML="";
+    var img=document.createElement("img");img.src=p.src;img.alt="souvenir";
+    var wrap=document.createElement("div");
+    var lbl=document.createElement("div");lbl.className="lbl";lbl.textContent="Souvenir";
+    var txt=document.createElement("div");txt.className="txt";
+    txt.textContent="Il y a "+years+(years>1?" ans":" an")+", "+dayLabel(p.date)+(p.note?" — "+p.note:"");
+    wrap.appendChild(lbl);wrap.appendChild(txt);
+    box.appendChild(img);box.appendChild(wrap);
+    box.style.display="flex";
+    box.onclick=function(){var idx=state.photos.indexOf(p);if(idx>=0)openLb(idx);};
+  }
+
+  /* ---- citation aléatoire du livre d'or ---- */
+  function renderQuote(){
+    var box=$("#quoteBox");if(!box)return;
+    if(!state.guestbook.length){box.style.display="none";return;}
+    var c=state.guestbook[Math.floor(Math.random()*state.guestbook.length)];
+    box.innerHTML="";
+    var txt=document.createElement("div");txt.className="txt";txt.textContent="« "+c.text+" »";
+    var who=document.createElement("div");who.className="who";who.textContent="— "+(c.name||"Anonyme");
+    box.appendChild(txt);box.appendChild(who);
+    box.style.display="flex";
+  }
+
+  /* ---- nouveautés depuis la dernière visite ---- */
+  function renderNews(){
+    var banner=$("#newsBanner");if(!banner)return;
+    var key="famsite:lastVisit",last=null;
+    try{last=localStorage.getItem(key);}catch(e){}
+    var now=Date.now();
+    if(last){
+      var n=state.photos.filter(function(p){return (p.added||p.date)>parseInt(last,10);}).length;
+      if(n>0){
+        banner.textContent=n===1?"1 nouvelle photo depuis ta dernière visite":n+" nouvelles photos depuis ta dernière visite";
+        banner.style.display="block";
+        banner.onclick=function(){show("album");};
+      }else{banner.style.display="none";}
+    }else{banner.style.display="none";}
+    try{localStorage.setItem(key,String(now));}catch(e){}
+  }
+
+  /* ---- petite touche saisonnière ---- */
+  function renderSeason(){
+    var t=$("#seasonTag");if(!t)return;
+    var m=new Date().getMonth();
+    var msgs={11:"❄️ Préparatifs de fête en cours",0:"✨ Bonne année à toute la famille",
+      5:"☀️ L'été approche",6:"🌻 Bel été à tous",7:"🌻 Bel été à tous",8:"🍂 La rentrée est là"};
+    if(msgs[m]){t.textContent=msgs[m];t.style.display="block";}else{t.style.display="none";}
+  }
+
+  /* ---- carte des souvenirs (GPS) ---- */
+  function renderCarte(){
+    var geo=state.photos.filter(function(p){return typeof p.lat==="number"&&typeof p.lng==="number";});
+    var empty=$("#carteEmpty"),mapDiv=$("#mapDiv");
+    if(!geo.length){empty.style.display="block";mapDiv.style.display="none";return;}
+    empty.style.display="none";mapDiv.style.display="block";
+    if(typeof L==="undefined")return;
+    if(!mapInstance){
+      mapInstance=L.map("mapDiv");
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+        attribution:"© OpenStreetMap",maxZoom:18
+      }).addTo(mapInstance);
+    }
+    mapMarkers.forEach(function(m){mapInstance.removeLayer(m);});
+    mapMarkers=[];
+    var bounds=[];
+    geo.forEach(function(p){
+      var marker=L.marker([p.lat,p.lng]).addTo(mapInstance);
+      var wrap=document.createElement("div");wrap.className="mapPopup";
+      var img=document.createElement("img");img.src=p.src;wrap.appendChild(img);
+      var cap=document.createElement("div");cap.className="cap";cap.textContent=dayLabel(p.date)+(p.note?" — "+p.note:"");
+      wrap.appendChild(cap);
+      marker.bindPopup(wrap);
+      mapMarkers.push(marker);
+      bounds.push([p.lat,p.lng]);
+    });
+    if(bounds.length===1){mapInstance.setView(bounds[0],13);}
+    else{mapInstance.fitBounds(bounds,{padding:[30,30]});}
+    setTimeout(function(){mapInstance.invalidateSize();},150);
+  }
+
+  /* ---- sauvegarde / restauration ---- */
+  /* ---- lightbox ---- */
+  function openLb(i){lbIndex=i;$("#lbImg").src=state.photos[i].src;$("#lb").classList.add("open");}
+  function closeLb(){$("#lb").classList.remove("open");}
+  function step(d){if(!state.photos.length)return;lbIndex=(lbIndex+d+state.photos.length)%state.photos.length;$("#lbImg").src=state.photos[lbIndex].src;}
+  $("#lbClose").addEventListener("click",closeLb);
+  $("#lbPrev").addEventListener("click",function(){step(-1);});
+  $("#lbNext").addEventListener("click",function(){step(1);});
+  $("#lb").addEventListener("click",function(e){if(e.target.id==="lb")closeLb();});
+  document.addEventListener("keydown",function(e){
+    if(!$("#lb").classList.contains("open"))return;
+    if(e.key==="Escape")closeLb();if(e.key==="ArrowLeft")step(-1);if(e.key==="ArrowRight")step(1);});
+
+  $("#printJournal").addEventListener("click",function(){window.print();});
+
+  pillNoAnim();movePill($("#tabAccueil"));requestAnimationFrame(pillYesAnim);
+  renderSeason();loadAll();startCar();
+})();
+</script>
+</body>
+</html>
